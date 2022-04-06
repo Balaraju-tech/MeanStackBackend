@@ -1,36 +1,25 @@
 const express = require("express");
-const app = require("./app");
+const app = express();
 const port = process.env.port || 8000; 
 const mongoose = require("mongoose");
 const cors = require("cors");
-const cookieParser = require("cookie-parser");
+const AuthController = require("./Auth/login");
+const ListOfJobsController = require("./Jobs/jobs");
+const ListOfUsersController = require("./Users/users");
 const bodyParser = require("body-parser");
 
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
 
-// app.options('*', cors({
-//     "origin": "*",
-//     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-//   }))
 
-app.use('/*', function(req, res, next) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-    // res.header('Access-Control-Allow-Origin', '*');
-    // res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    next();
-  });
+app.use(cors());
 
-  
+app.use("/auth", AuthController);
 
+app.use("/jobs", ListOfJobsController);
 
-app.use(cookieParser());
+app.use("/users", ListOfUsersController);
+
 mongoose.connect("mongodb://localhost:27017/local").then(()=>{
     console.log("Connection successful");
 }).catch((err)=>{

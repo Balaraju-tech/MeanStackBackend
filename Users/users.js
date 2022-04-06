@@ -5,6 +5,8 @@ router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json());
 const usersDB = require("../model/users");
 const usersDBA = require("../db/userDb");
+const { verifyTokenAndGetUserDetails } = require("../security.utis");
+const bcrypt = require('bcrypt');
 
 let deleteUser = function(userName, res, callback){
     usersDB.collection.deleteOne({userName: userName},(err, data)=>{
@@ -21,18 +23,18 @@ let sendResponse = function(err, data, res){
     }
 }
 
-router.get("/", async(req, res)=>{
+router.get("/", verifyTokenAndGetUserDetails, async(req, res)=>{
     const data = await usersDB.find();
     if(data){
-        res.json(data);
+        res.status(201).json({users: data});
     }
     else{
         res.sendStatus(401);
     }
 });
 
-router.post("/adduser/", (req, res)=>{
-    const userDetails = req.body.userDetails;
+router.post("/adduser/", verifyTokenAndGetUserDetails, (req, res)=>{
+    let userDetails = req.body.userDetails;
     const userNameFound = new Promise((resolve, reject)=>{
         usersDB.find({userName : userDetails.userName},(err, data)=>{
             if(data){
@@ -41,8 +43,8 @@ router.post("/adduser/", (req, res)=>{
                 reject(err);
             }
         });
-});
-    
+    });
+    userDetails.password = bcrypt.hashSync(userDetails.password, 8);
     userNameFound.then(data=>{
        if(data.length === 0){
            usersDBA.addUser(userDetails, res, sendResponse);
@@ -54,7 +56,7 @@ router.post("/adduser/", (req, res)=>{
     })
 });
 
-router.post("/deleteUser/", (req, res)=>{
+router.post("/deleteUser/", verifyTokenAndGetUserDetails, (req, res)=>{
     const userName = req.body.userName;
     const userDetails = new Promise((resolve, reject)=>{
         usersDB.find({userName: userName}, (err, data)=>{

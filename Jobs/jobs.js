@@ -18,10 +18,10 @@ router.get("/", verifyTokenAndGetUserDetails, async (req, res)=>{
     }
 });
 
-router.post("/createJob", (req, res)=>{
+router.post("/createJob", verifyTokenAndGetUserDetails, (req, res)=>{
     if(req.body){
         const insertData = new Promise((resolve, reject)=>{
-            jobsDB.collection.insertOne({jobTitle: req.body.jobTitle, jobDescription: req.body.jobDescription, eligibility: req.body.eligibility},
+            jobsDB.collection.insertOne({jobTitle: req.body.jobTitle, jobDescription: req.body.jobDescription, eligibility: req.body.eligibility, jobRole: req.body.jobRole, appliedBy: req.body.appliedBy},
                 (err, data)=>{
                     if(err) reject(err);
                     if(data) resolve(data);

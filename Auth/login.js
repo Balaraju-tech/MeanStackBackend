@@ -8,6 +8,8 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const security = require("../security.utis");
 const usersDBA = require("../db/userDb");
+const bcrypt = require('bcrypt');
+const { verifyTokenAndGetUserDetails } = require("../security.utis");
 
 router.use(bodyparser.urlencoded({ extended: true }));
 router.use(bodyparser.json()); 
@@ -31,17 +33,14 @@ router.post("/login", async (req, res) => {
   const user = await usersDB.findOne({ userName: userName });
   if (user === null) {
     res.sendStatus(401);
-  } else if (userName === user.userName && password === user.password) {
-    const token = await security.createJWTToken();
-
-    res.cookie('token',  token, { httpOnly: false, secure: false, maxAge: 3600000 })
-    .status(200)
-    .json({ loggedIn: true  });
-    // res.cookie('jwt',token, { httpOnly: true, secure: false, maxAge: 3600000 })
-
-    // res.status(202).json({ loggedIn: true });
   } else {
-    res.sendStatus(401);
+    const isPasswordValid = bcrypt.compareSync(password, user.password); 
+    if (userName === user.userName && isPasswordValid === true) {
+      const token = await security.createJWTToken();
+      res.status(200).json({ loggedIn: true, token: token, isAdmin: user.admin});
+    } else {
+      res.sendStatus(401);
+    }
   }
 });
 
@@ -50,16 +49,19 @@ router.post("/signup", async (req, res) => {;
     userName: req.body.userDetails.userName,
   });
   if (user === null) {
+    console.log("USER IS NULL");
     const token = await security.createJWTToken();
+    const password = req.body.password;
+    const bcryptedPassword = bcrypt.hashSync(password, 8);
     usersDB.collection.insertOne(
       {
         userName: req.body.userName,
-        password: req.body.password,
+        password: bcryptedPassword,
         qualification: req.body.qualification,
-        admin: req.body.admin,
+        admin: false,
       },
       (err, data) => {
-          if(err) res.status(401).json({acknowledged: false});
+          if(err) res.status(402).json({loggedIn: false});
 
           if(data){
             res.cookie('token',  token, { httpOnly: true, secure: false })
@@ -70,8 +72,12 @@ router.post("/signup", async (req, res) => {;
       }
     );
   } else {
-    res.status(401);
+    res.status(501).json({loggedIn: false});
   }
 });
+
+router.post("/getLoggedInUserEmail",verifyTokenAndGetUserDetails, (req, res)=>{
+    res.json({userName: req.userName});
+})
 
 module.exports = router;
