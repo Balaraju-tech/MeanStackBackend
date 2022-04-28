@@ -1,29 +1,45 @@
-
 const fs = require("fs");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const users = require("./model/users");
 
-let createJWTToken = async function(userID){
-    let secretKey = await fs.readFileSync(`D:/angular13/jobSearchPortal/jobSearchServer/secret.json`);
-    secretKey = JSON.parse(secretKey);
-    let token = await jwt.sign({id:userID}, secretKey.key, {expiresIn: 86400});
-    return token;
-}
+let getSecretKey = async function () {
+  let secretKey = await fs.readFileSync(
+    `D:/angular13/jobSearchPortal/jobSearchServer/secret.json`
+  );
+  secretKey = JSON.parse(secretKey);
+  return secretKey.key;
+};
 
-let verifyTokenAndGetUserDetails = async function(req,res, next){
-    const {cookies} = req;
-    console.log("THE TOKEN FROM UI IS*************************************************");
-    console.log(cookies)
-    let secretKey = await fs.readFileSync(`D:/angular13/jobSearchPortal/jobSearchServer/secret.json`);
-    const decoded = jwt.verify(cookieToken, secretKey);
-    console.log("IAM IN THE MIDDLEWARE");
-    console.log(decoded);
-    const userDetails = users.findOne(decoded.id) 
-    if (userDetails === null) {
+let createJWTToken = async function (userID) {
+  let secretKey = await getSecretKey();
+  let token = await jwt.sign({ id: userID }, secretKey, { expiresIn: 86400 });
+  return token;
+};
+
+let verifyTokenAndGetUserDetails = async function (req, res, next) {
+  console.log("THE HEADERS LOG IS ");
+  console.log(req.headers);
+  if (req.headers.authorization) {
+    let token = req.headers.authorization;
+    const bearertoken = token.split(" ");
+    token = bearertoken[1];
+    let secretKey = await getSecretKey();
+    let decoded;
+    try {
+      decoded = await jwt.verify(token, secretKey);
+      const userDetails = users.findOne(decoded.id);
+      if (userDetails === null) {
         res.sendStatus(401);
       } else if (userDetails) {
-            next();
-       }
-}
+        req.userName = userDetails.userName;
+        next();
+      }
+    } catch (err) {
+      res.sendStatus(401);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+};
 
-module.exports = {createJWTToken, verifyTokenAndGetUserDetails}
+module.exports = { createJWTToken, verifyTokenAndGetUserDetails };
