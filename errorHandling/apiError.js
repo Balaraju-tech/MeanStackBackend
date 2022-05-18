@@ -8,5 +8,13 @@ class AppError extends Error{
         Error.captureStackTrace(this, this.constructor);
     }
 }
+const errorHandler= (res, err)=>{
+    const statusCode = err.statusCode || 500;
+    res.status(statusCode).json({
+        success:0,
+        message: err.message,
+        stack: err.stack,
+    });
+};
 
-module.exports = AppError;
+module.exports = {AppError, errorHandler};
