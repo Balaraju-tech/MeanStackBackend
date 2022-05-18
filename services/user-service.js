@@ -1,5 +1,5 @@
-const usersDB = require("../model/users");
-const usersDAO = require("./usersdao");
+const usersDB = require('../db/users');
+const usersDAO = require('../daos/usersdao');
 const bcrypt = require('bcrypt');
 
 
@@ -9,9 +9,9 @@ const getListOfUsers = async()=>{
 };
 
 const addUserIfNotExist = async(userDetails)=>{
-        userDetails.password = await bcrypt.hashSync(userDetails.password, 8);
-        let data = await usersDAO.addUserIfNotExist(userDetails);
-       return data;
+    userDetails.password = await bcrypt.hashSync(userDetails.password, 8);
+    let data = await usersDAO.addUserIfNotExist(userDetails);
+    return data;
 };
 
 const deleteUser = async (usernameToDelete)=>{
@@ -21,7 +21,7 @@ const deleteUser = async (usernameToDelete)=>{
         data =  await usersDB.collection.deleteOne({userName: usernameToDelete});
     }
     else{
-        data = {}
+        data = {};
     }
     return data;      
 };
